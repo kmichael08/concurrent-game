@@ -41,6 +41,5 @@ public class Jednostka extends Unit {
 		x--;
 	}
 	
-	
-	
+		
 }
