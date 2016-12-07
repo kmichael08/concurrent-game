@@ -1,11 +1,10 @@
 package gra;
 
 public class Test1 {
-	public static void main(String args[]) {
-		System.out.println("Hello!");
-		
-		MojaPlansza board = new MojaPlansza(5, 8);
-				
+	
+	private static MojaPlansza board = new MojaPlansza(5, 8);
+	
+	private static void first() {
 		Postać postać = new Unit(2, 2);
 		
 		try {
@@ -69,7 +68,27 @@ public class Test1 {
 			//e.printStackTrace();
 		}
 		
-		Postać p2 = new Unit(3, 1);
+		try {
+			board.przesuń(postać, Kierunek.DÓŁ);
+		} catch (InterruptedException | DeadlockException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		board.wyswietl();
+		
+		try {
+			board.przesuń(postać, Kierunek.DÓŁ);
+		} catch (InterruptedException | DeadlockException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		board.wyswietl();
+	}
+
+	private static void second() {
+	Postać p2 = new Unit(3, 1);
 		
 		try {
 			board.postaw(p2, 0, 3);
@@ -97,24 +116,19 @@ public class Test1 {
 		}
 		
 		board.wyswietl();
-		
-		try {
-			board.przesuń(postać, Kierunek.DÓŁ);
-		} catch (InterruptedException | DeadlockException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		board.wyswietl();
-		
-		try {
-			board.przesuń(postać, Kierunek.DÓŁ);
-		} catch (InterruptedException | DeadlockException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		board.wyswietl();
 	}
-
+	
+	
+	public static void main(String args[]) {
+		System.out.println("Hello!");
+		
+		new Thread(new Runnable() {
+			public void run() { first(); }
+		}).start();
+	
+		new Thread(new Runnable() {
+			public void run() { second(); }
+		}).start();
+		
+	}
 }
