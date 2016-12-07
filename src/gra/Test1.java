@@ -26,6 +26,7 @@ public class Test1 {
 		
 		board.wyswietl();
 		
+		
 		try {
 			board.przesuń(postać, Kierunek.GÓRA);
 		} catch (InterruptedException | DeadlockException e) {
@@ -61,7 +62,8 @@ public class Test1 {
 		}
 		
 		board.wyswietl();
-						
+		
+		
 		try {
 			board.postaw(postać, 0, 4);
 		} catch (InterruptedException | IllegalArgumentException e) {
@@ -115,6 +117,7 @@ public class Test1 {
 		}
 		
 		board.wyswietl();
+		
 	}
 
 }

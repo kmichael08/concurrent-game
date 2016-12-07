@@ -4,26 +4,104 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class MojaPlansza implements Plansza {
 	int wysokosc, szerokosc;	
 	List<Postać> naMapie;
 	Postać[][] plansza;
 	Map<Postać, Jednostka> jednostki;
+	Map<Postać, ExecutorService> executors;
+		
+    private class Postaw implements Callable<Void> {
+    	private Postać postać;
+    	private int wiersz, kolumna;    	
+    	
+    	public Postaw(Postać postać, int wiersz, int kolumna) {
+    		this.postać = postać;
+    		this.wiersz = wiersz;
+    		this.kolumna = kolumna;
+    	}
+       
+        @Override
+        public synchronized Void call() throws InterruptedException {
+        	
+    		if (naMapie.contains(postać))
+    			throw new IllegalArgumentException("Unit already on the board!");
+    		    		
+    		if (wiersz < 0 || kolumna < 0 || wiersz + postać.dajWysokość() >= wysokosc|| 
+    				kolumna + postać.dajSzerokość() >= szerokosc)
+    			throw new IllegalArgumentException("Unit can't go out of the board!");
+    		 		
+    		while(!jestWolne(wiersz, kolumna, postać.dajWysokość(), postać.dajSzerokość()))
+    			wait();
+    		    		
+    		naMapie.add(postać);
+    		Jednostka nowa = new Jednostka(postać.dajWysokość(), postać.dajSzerokość(), kolumna, wiersz);
+    		jednostki.put(postać, nowa);
+    		
+    		
+    		for (int i = wiersz; i < wiersz + postać.dajWysokość(); i++)
+    			for (int j = kolumna; j < kolumna + postać.dajSzerokość(); j++)
+    				plansza[i][j] = postać;
+
+        	
+        	return null;
+        }
+
+    }
 	
+    private class Przesuń implements Callable<Void> {
+    	private Postać postać;
+    	private Kierunek kierunek;    	
+    	
+    	public Przesuń(Postać postać, Kierunek kierunek) {
+    		this.postać = postać;
+    		this.kierunek = kierunek;
+    	}
+       
+        @Override
+        public synchronized Void call() throws InterruptedException {
+    		if (!naMapie.contains(postać))
+    			throw new IllegalArgumentException("Unit is not on the board!");
+    		
+    		Jednostka jednostka = jednostki.get(postać);
+    		if (!isMovable(jednostka, kierunek))
+    			throw new IllegalArgumentException("Unit would go out of the board.");
+    		
+    		while (!wolnePrzesun(jednostka, kierunek)) {
+    			System.out.println("Wait for some reason!");
+    			wait();
+    		}
+    		
+    		przesunNaPlanszy(jednostka, kierunek);
+    		
+    		notify();
+        	
+        	return null;
+        }
+
+    }
+
+    
 	public MojaPlansza(int wysokosc, int szerokosc) {
 		this.wysokosc = wysokosc;
 		this.szerokosc = szerokosc;
 		plansza = new Postać[wysokosc][szerokosc];
 		naMapie = new ArrayList<Postać>();
 		jednostki = new HashMap<Postać, Jednostka>();
+		executors = new HashMap<Postać, ExecutorService>();
 	}
 	
 	/**
 	 * @param postać
 	 * @return id of the unit
 	 */
-	private synchronized int wezId(Postać postać) {
+	private  int wezId(Postać postać) {
 		if (postać == null)
 			return 0;
 		return jednostki.get(postać).dajId();
@@ -32,7 +110,7 @@ public class MojaPlansza implements Plansza {
 	/**
 	 * Display the board.
 	 */
-	public synchronized void wyswietl() {
+	public void wyswietl() {
 		for (int i = 0; i < wysokosc; i++) {
 			for (int j = 0; j < szerokosc; j++)
 				System.out.print(wezId(plansza[i][j]) + " ");
@@ -48,7 +126,7 @@ public class MojaPlansza implements Plansza {
 	 * @param w - width
 	 * @return is the area free
 	 */
-	private synchronized boolean jestWolne(int y, int x, int h, int w) {
+	private boolean jestWolne(int y, int x, int h, int w) {
 		for (int i = y; i < y + h; i++)
 			for (int j = x; j < x + w; j++)
 				if (plansza[i][j] != null)
@@ -56,49 +134,31 @@ public class MojaPlansza implements Plansza {
 		return true;
 	}
 	
-	public synchronized void postaw(Postać postać, int wiersz, int kolumna)
+	public void postaw(Postać postać, int wiersz, int kolumna)
 			throws InterruptedException, IllegalArgumentException {
+		executors.put(postać, Executors.newFixedThreadPool(1));
 
-		if (naMapie.contains(postać))
-			throw new IllegalArgumentException("Unit already on the board!");
-		
-		if (wiersz < 0 || kolumna < 0 || wiersz + postać.dajWysokość() >= wysokosc|| 
-				kolumna + postać.dajSzerokość() >= szerokosc)
-			throw new IllegalArgumentException("Unit can't go out of the board!");
-		
-		while(!jestWolne(wiersz, kolumna, postać.dajWysokość(), postać.dajSzerokość()))
-			wait();
-		
-		naMapie.add(postać);
-		Jednostka nowa = new Jednostka(postać.dajWysokość(), postać.dajSzerokość(), kolumna, wiersz);
-		jednostki.put(postać, nowa);
-		
-		
-		for (int i = wiersz; i < wiersz + postać.dajWysokość(); i++)
-			for (int j = kolumna; j < kolumna + postać.dajSzerokość(); j++)
-				plansza[i][j] = postać;
+		Future<Void> res = executors.get(postać).submit(new Postaw(postać, wiersz, kolumna));
+		try {
+			res.get();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
-	public synchronized void przesuń(Postać postać, Kierunek kierunek)
+	public void przesuń(Postać postać, Kierunek kierunek)
 			throws InterruptedException, DeadlockException {
-		if (!naMapie.contains(postać))
-			throw new IllegalArgumentException("Unit is not on the board!");
-		
-		Jednostka jednostka = jednostki.get(postać);
-		if (!isMovable(jednostka, kierunek))
-			throw new IllegalArgumentException("Unit would go out of the board.");
-		
-		while (!wolnePrzesun(jednostka, kierunek)) {
-			System.out.println("Wait for some reason!");
-			wait();
-		}
-		
-		przesunNaPlanszy(jednostka, kierunek);
-		
-		notifyAll();
+		Future<Void> res = executors.get(postać).submit(new Przesuń(postać, kierunek));
+		try {
+			res.get();
+		} catch (ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	
 	}
 	
-	private synchronized void przesunNaPlanszy(Jednostka jednostka, Kierunek kierunek) {
+	private void przesunNaPlanszy(Jednostka jednostka, Kierunek kierunek) {
 		Postać temp;
 		
 		if (kierunek == Kierunek.GÓRA) {
@@ -148,7 +208,7 @@ public class MojaPlansza implements Plansza {
 	 * @param kierunek
 	 * @return is the area free to move the unit.
 	 */
-	private synchronized boolean wolnePrzesun(Jednostka jednostka, Kierunek kierunek) {
+	private boolean wolnePrzesun(Jednostka jednostka, Kierunek kierunek) {
 		int h, w;
 		int x, y;
 		
@@ -189,7 +249,7 @@ public class MojaPlansza implements Plansza {
 	 * @param kierunek
 	 * @return can unit be moved, so that it will stay on the board
 	 */
-	private synchronized boolean isMovable(Jednostka jednostka, Kierunek kierunek) {
+	private boolean isMovable(Jednostka jednostka, Kierunek kierunek) {
 		if (kierunek == Kierunek.GÓRA && jednostka.y() == 0)
 			return false;
 		if (kierunek == Kierunek.DÓŁ && jednostka.y() == wysokosc - 1)
