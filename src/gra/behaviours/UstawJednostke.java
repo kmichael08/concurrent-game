@@ -9,7 +9,7 @@ public class UstawJednostke implements Runnable {
 	  private final int x;
 	  private final int y;
 
-	  public UstawJednostke(MojaPlansza plansza, Postać postać, int x, int y) {
+	  public UstawJednostke(MojaPlansza plansza, Postać postać, int y, int x) {
 	    this.plansza = plansza;
 	    this.postać = postać;
 	    this.x = x;
@@ -21,7 +21,7 @@ public class UstawJednostke implements Runnable {
 	    
 	    System.out.println("Thread: " + Thread.currentThread().getName() + " started putting");
 	    try {
-	      plansza.postaw(postać, x, y);
+	      plansza.postaw(postać, y, x);
 	      plansza.wyswietl();
 	    } catch (InterruptedException e) {
 	      System.out.println(e.getMessage());

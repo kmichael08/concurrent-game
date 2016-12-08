@@ -122,7 +122,7 @@ public class MojaPlansza implements Plansza {
 				kolumna + postać.dajSzerokość() > szerokosc)
 			throw new IllegalArgumentException("Unit can't go out of the board!");
 				
-		while(!jestWolne(wiersz, kolumna, postać.dajWysokość(), postać.dajSzerokość()))
+		while(!jestWolne(wiersz, kolumna, postać.dajWysokość(), postać.dajSzerokość())) 
 			wait();
 		
 		naMapie.add(postać);
@@ -151,10 +151,8 @@ public class MojaPlansza implements Plansza {
 		if (!isMovable(jednostka, kierunek))
 			throw new IllegalArgumentException("Unit would go out of the board.");
 		
-		while (!wolnePrzesun(jednostka, kierunek)) {
-			System.out.println("Wait for moving! " + jednostka.dajId());
+		while (!wolnePrzesun(jednostka, kierunek)) 
 			wait();
-		}
 		
 		przesunNaPlanszy(jednostka, kierunek);
 		
