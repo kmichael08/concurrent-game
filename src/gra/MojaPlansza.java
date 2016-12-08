@@ -114,14 +114,14 @@ public class MojaPlansza implements Plansza {
 	 */
 	public synchronized void postaw(Postać postać, int wiersz, int kolumna)
 			throws InterruptedException, IllegalArgumentException {
-
+		
 		if (naMapie.contains(postać))
 			throw new IllegalArgumentException("Unit already on the board!");
 		
 		if (wiersz < 0 || kolumna < 0 || wiersz + postać.dajWysokość() > wysokosc|| 
 				kolumna + postać.dajSzerokość() > szerokosc)
 			throw new IllegalArgumentException("Unit can't go out of the board!");
-		
+				
 		while(!jestWolne(wiersz, kolumna, postać.dajWysokość(), postać.dajSzerokość()))
 			wait();
 		
@@ -307,8 +307,16 @@ public class MojaPlansza implements Plansza {
 		Postać postać = plansza[wiersz][kolumna];
 		if (postać != null)
 			jeśliZajęte.wykonaj(postać);
-		else
-			new Thread(jeśliWolne).start();
+		else {
+			Thread th = new Thread(jeśliWolne);
+			th.start();
+			try {
+				th.join();
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 
 	
