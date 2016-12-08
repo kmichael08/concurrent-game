@@ -1,5 +1,15 @@
-package gra;
+package gra.tests;
 
+import gra.DeadlockException;
+import gra.Kierunek;
+import gra.MojaPlansza;
+import gra.Postać;
+import gra.Unit;
+
+/**
+ * In this test depending on execution order we may have a deadlock, 
+ * or a unit will move after the other one finishes moving.
+ */
 public class Test1 {
 	
 	private static MojaPlansza board = new MojaPlansza(5, 8);
@@ -116,6 +126,7 @@ public class Test1 {
 		}
 		
 		board.wyswietl();
+		
 	}
 	
 	

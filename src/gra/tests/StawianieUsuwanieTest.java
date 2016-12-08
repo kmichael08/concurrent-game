@@ -1,6 +1,13 @@
-package gra;
+package gra.tests;
 
-public class StawianieJednostek {
+import gra.MojaPlansza;
+import gra.Unit;
+import gra.behaviours.PostawienieIUsuniecieJednostki;
+
+/**
+ * In this test, we put 5 units and then remove them from the board.
+ */
+public class StawianieUsuwanieTest {
 	  public static void main(String[] args) {
 
 		    MojaPlansza plansza = new MojaPlansza(4, 4);
@@ -33,6 +40,7 @@ public class StawianieJednostek {
 		    catch (InterruptedException e) {
 		      e.printStackTrace();
 		    }
+		   
 
 
 		  }

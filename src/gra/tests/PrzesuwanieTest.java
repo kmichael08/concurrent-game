@@ -1,5 +1,14 @@
-package gra;
+package gra.tests;
 
+import gra.Kierunek;
+import gra.MojaPlansza;
+import gra.Unit;
+import gra.behaviours.PrzesuniecieJednostki;
+import gra.behaviours.UstawJednostke;
+
+/**
+ * Chain of moves, which are all triggered after the last one move. 
+ */
 public class PrzesuwanieTest {
 	
 	public static void main(String[] args) {

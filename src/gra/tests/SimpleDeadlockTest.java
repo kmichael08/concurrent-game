@@ -1,5 +1,14 @@
-package gra;
+package gra.tests;
 
+import gra.Kierunek;
+import gra.MojaPlansza;
+import gra.Unit;
+import gra.behaviours.PrzesuniecieJednostki;
+import gra.behaviours.UstawJednostke;
+
+/**
+ * Very simple test detecting Deadlock.
+ */
 public class SimpleDeadlockTest {
 	
 	public static void main(String[] args) {

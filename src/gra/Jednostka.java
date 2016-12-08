@@ -1,6 +1,10 @@
 package gra;
 
+/**
+ * Wrapper class for Unit.
+ */
 public class Jednostka extends Unit {
+		
 	private static int autoIncr = 1;
 	private int id;
 	// upper left corner

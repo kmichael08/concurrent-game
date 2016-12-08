@@ -1,4 +1,7 @@
-package gra;
+package gra.behaviours;
+
+import gra.MojaPlansza;
+import gra.Postać;
 
 public class UstawJednostke implements Runnable {
 	  private final MojaPlansza plansza;

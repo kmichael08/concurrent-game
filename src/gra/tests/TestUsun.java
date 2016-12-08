@@ -1,5 +1,12 @@
-package gra;
+package gra.tests;
 
+import gra.MojaPlansza;
+import gra.Postać;
+import gra.Unit;
+
+/**
+ * Very simple one thread test.
+ */
 public class TestUsun {
 	public static void main(String args[]) {
 		MojaPlansza plansza = new MojaPlansza(4, 4);

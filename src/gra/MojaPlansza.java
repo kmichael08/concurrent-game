@@ -2,14 +2,17 @@ package gra;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class MojaPlansza implements Plansza {
 	int wysokosc, szerokosc;	
 	List<Postać> naMapie;
 	Postać[][] plansza;
 	Map<Postać, Jednostka> jednostki;
+	Map<Integer, Set<Integer>> graph;
 	
 	public MojaPlansza(int wysokosc, int szerokosc) {
 		this.wysokosc = wysokosc;
@@ -17,6 +20,7 @@ public class MojaPlansza implements Plansza {
 		plansza = new Postać[wysokosc][szerokosc];
 		naMapie = new ArrayList<Postać>();
 		jednostki = new HashMap<Postać, Jednostka>();
+		graph = new HashMap<Integer, Set<Integer>>();
 	}
 	
 	/**
@@ -28,7 +32,49 @@ public class MojaPlansza implements Plansza {
 			return 0;
 		return jednostki.get(postać).dajId();
 	}
+	
+	/**
+	 * Display the graph of units waiting for move.
+	 */
+	public synchronized void graph() {
+		System.out.println(graph.toString());
+	}
+	
+	/**
+	 * @return is there a cycle of units waiting for move.
+	 * @throws DeadlockException 
+	 */
+	public synchronized void detectCycle() throws DeadlockException {
+		Map<Integer, Integer> state = new HashMap<>();
+				
+		graph();
 		
+		for (Integer node : graph.keySet()) {
+			if (!state.containsKey(node))
+				dfs(node, state);
+		}
+	}
+	
+	
+	private synchronized void dfs(Integer node, Map<Integer, Integer> state) throws DeadlockException {
+		
+		state.put(node, 1);
+		
+		if (graph.containsKey(node)) {
+			for (Integer neighbour : graph.get(node)) {
+				Integer stan = state.get(neighbour);
+				if (stan == null)
+					dfs(neighbour, state);
+				else if (stan == 1) {
+					throw new DeadlockException();
+				}
+			}
+				
+		}
+				
+		state.put(node, 2);
+	}
+
 	/**
 	 * Display the board.
 	 */
@@ -49,13 +95,23 @@ public class MojaPlansza implements Plansza {
 	 * @return is the area free
 	 */
 	private synchronized boolean jestWolne(int y, int x, int h, int w) {
+		return blocking(y, x, h, w).isEmpty();
+	}
+	
+	private synchronized Set<Integer> blocking(int y, int x, int h, int w) {
+		Set<Integer> blockingUnits = new HashSet<Integer>();
+		
 		for (int i = y; i < y + h; i++)
 			for (int j = x; j < x + w; j++)
 				if (plansza[i][j] != null)
-					return false;
-		return true;
+					blockingUnits.add(jednostki.get(plansza[i][j]).dajId());
+		
+		return blockingUnits;
 	}
 	
+	/**
+	 * Put the unit into the board. Wait if the area is not free.
+	 */
 	public synchronized void postaw(Postać postać, int wiersz, int kolumna)
 			throws InterruptedException, IllegalArgumentException {
 
@@ -70,6 +126,7 @@ public class MojaPlansza implements Plansza {
 			wait();
 		
 		naMapie.add(postać);
+		
 		Jednostka nowa = new Jednostka(postać.dajWysokość(), postać.dajSzerokość(), kolumna, wiersz);
 		jednostki.put(postać, nowa);
 		
@@ -79,17 +136,23 @@ public class MojaPlansza implements Plansza {
 				plansza[i][j] = postać;
 	}
 
+	/**
+	 * Move the unit onto given direction. Wait if the area is not free.
+	 * Detect the deadlock (cycle of units waiting for moving). 
+	 */
 	public synchronized void przesuń(Postać postać, Kierunek kierunek)
 			throws InterruptedException, DeadlockException {
+		
 		if (!naMapie.contains(postać))
 			throw new IllegalArgumentException("Unit is not on the board!");
 		
 		Jednostka jednostka = jednostki.get(postać);
+		
 		if (!isMovable(jednostka, kierunek))
 			throw new IllegalArgumentException("Unit would go out of the board.");
 		
 		while (!wolnePrzesun(jednostka, kierunek)) {
-			System.out.println("Wait for some reason!");
+			System.out.println("Wait for moving! " + jednostka.dajId());
 			wait();
 		}
 		
@@ -98,6 +161,9 @@ public class MojaPlansza implements Plansza {
 		notifyAll();
 	}
 	
+	/**
+	 * Move the unit. (Ability to move is guaranteed).
+	 */
 	private synchronized void przesunNaPlanszy(Jednostka jednostka, Kierunek kierunek) {
 		Postać temp;
 		
@@ -146,9 +212,10 @@ public class MojaPlansza implements Plansza {
 	/**
 	 * @param jednostka
 	 * @param kierunek
-	 * @return is the area free to move the unit.
+	 * @return is the area free to move the unit. (Guaranteed that the area is inside the board).
+	 * @throws DeadlockException 
 	 */
-	private synchronized boolean wolnePrzesun(Jednostka jednostka, Kierunek kierunek) {
+	private synchronized boolean wolnePrzesun(Jednostka jednostka, Kierunek kierunek) throws DeadlockException {
 		int h, w;
 		int x, y;
 		
@@ -180,6 +247,12 @@ public class MojaPlansza implements Plansza {
 			y = jednostka.y();
 		}
 		
+		Set<Integer> blockingUnits = blocking(y, x, h, w);
+		if (!blockingUnits.isEmpty())
+			graph.put(jednostka.dajId(), blockingUnits);
+	
+		detectCycle();
+		
 		return jestWolne(y, x, h, w);
 	}
 	
@@ -196,7 +269,8 @@ public class MojaPlansza implements Plansza {
 			return false;
 		if (kierunek == Kierunek.LEWO && jednostka.x() == 0)
 			return false;
-		if (kierunek == Kierunek.PRAWO && jednostka.x() == szerokosc - 1);
+		if (kierunek == Kierunek.PRAWO && jednostka.x() == szerokosc - 1)
+			return false;
 		
 		return true;
 	}
@@ -207,6 +281,7 @@ public class MojaPlansza implements Plansza {
 	 */
 	public synchronized void usuń(Postać postać) {
 		if (!naMapie.contains(postać))
+			
 			throw new IllegalArgumentException("Unit is not on the board!");
 		else {
 			Jednostka jednostka = jednostki.get(postać);
@@ -223,6 +298,10 @@ public class MojaPlansza implements Plansza {
 	}
 	
 
+	/**
+	 * Check if the field is occupied. If yes, then perform jeśliZajęte on the unit.
+	 * Otherwise perform jeśliWolne.
+	 */
 	public synchronized void sprawdź(int wiersz, int kolumna, Akcja jeśliZajęte,
 			Runnable jeśliWolne) {
 		Postać postać = plansza[wiersz][kolumna];
