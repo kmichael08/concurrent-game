@@ -4,6 +4,7 @@ import gra.Action;
 import gra.MojaPlansza;
 import gra.Postać;
 import gra.Unit;
+import gra.behaviours.NotOccupied;
 import gra.behaviours.UstawJednostke;
 
 /**
@@ -37,10 +38,3 @@ public class AkcjaTest {
 
 }
 
-class NotOccupied implements Runnable {
-	@Override
-	public void run() {
-		System.out.println("Field is not occupied!");
-	}
-
-}

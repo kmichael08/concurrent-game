@@ -141,7 +141,7 @@ public class MojaPlansza implements Plansza {
 	 * Detect the deadlock (cycle of units waiting for moving). 
 	 */
 	public synchronized void przesuń(Postać postać, Kierunek kierunek)
-			throws InterruptedException, DeadlockException {
+			throws InterruptedException, DeadlockException, IllegalArgumentException {
 		
 		if (!naMapie.contains(postać))
 			throw new IllegalArgumentException("Unit is not on the board!");
@@ -277,7 +277,7 @@ public class MojaPlansza implements Plansza {
 	/**
 	 * Delete the unit from the board.
 	 */
-	public synchronized void usuń(Postać postać) {
+	public synchronized void usuń(Postać postać) throws IllegalArgumentException {
 		if (!naMapie.contains(postać))
 			
 			throw new IllegalArgumentException("Unit is not on the board!");
@@ -301,7 +301,10 @@ public class MojaPlansza implements Plansza {
 	 * Otherwise perform jeśliWolne.
 	 */
 	public synchronized void sprawdź(int wiersz, int kolumna, Akcja jeśliZajęte,
-			Runnable jeśliWolne) {
+			Runnable jeśliWolne) throws IllegalArgumentException {
+		if (wiersz < 0 || kolumna < 0 || wiersz >= wysokosc || kolumna >= szerokosc)
+			throw new IllegalArgumentException("This is field is outside the board!");
+		
 		Postać postać = plansza[wiersz][kolumna];
 		if (postać != null)
 			jeśliZajęte.wykonaj(postać);
