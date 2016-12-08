@@ -62,8 +62,8 @@ public class MojaPlansza implements Plansza {
 		if (naMapie.contains(postać))
 			throw new IllegalArgumentException("Unit already on the board!");
 		
-		if (wiersz < 0 || kolumna < 0 || wiersz + postać.dajWysokość() >= wysokosc|| 
-				kolumna + postać.dajSzerokość() >= szerokosc)
+		if (wiersz < 0 || kolumna < 0 || wiersz + postać.dajWysokość() > wysokosc|| 
+				kolumna + postać.dajSzerokość() > szerokosc)
 			throw new IllegalArgumentException("Unit can't go out of the board!");
 		
 		while(!jestWolne(wiersz, kolumna, postać.dajWysokość(), postać.dajSzerokość()))
@@ -212,7 +212,7 @@ public class MojaPlansza implements Plansza {
 			Jednostka jednostka = jednostki.get(postać);
 			
 			for (int i = jednostka.y(); i < jednostka.y() + jednostka.dajWysokość(); i++)
-				for(int j = jednostka.x(); i < jednostka.x() + jednostka.dajSzerokość(); j++)
+				for(int j = jednostka.x(); j < jednostka.x() + jednostka.dajSzerokość(); j++)
 					plansza[i][j] = null;
 			
 			jednostki.remove(postać);
